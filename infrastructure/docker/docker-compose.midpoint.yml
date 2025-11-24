@@ -1,0 +1,88 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: midpoint-postgres
+    environment:
+      POSTGRES_DB: midpoint
+      POSTGRES_USER: midpoint
+      POSTGRES_PASSWORD: midpoint
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  midpoint:
+    image: evolveum/midpoint:4.8
+    container_name: midpoint-core
+    depends_on:
+      - postgres
+    environment:
+      MIDPOINT_REPO_DATABASE_TYPE: postgresql
+      MIDPOINT_REPO_JDBC_URL: jdbc:postgresql://postgres:5432/midpoint
+      MIDPOINT_REPO_JDBC_USERNAME: midpoint
+      MIDPOINT_REPO_JDBC_PASSWORD: midpoint
+      MIDPOINT_ADMIN_PASSWORD: admin
+    ports:
+      - "8080:8080"
+    volumes:
+      - midpoint_home:/opt/midpoint/var
+
+  apacheds:
+    image: ghcr.io/dogtagpki/ldap-server:latest
+    container_name: apacheds
+    environment:
+      LDAP_DOMAIN: example.com
+      LDAP_ORGANISATION: Example Corp
+      LDAP_ADMIN_PASSWORD: secret
+    ports:
+      - "10389:389"
+    volumes:
+      - apacheds_data:/var/lib/ldap
+
+  odoo:
+    image: odoo:17
+    container_name: odoo
+    depends_on:
+      - odoo-db
+    ports:
+      - "8069:8069"
+    environment:
+      HOST: odoo-db
+      USER: odoo
+      PASSWORD: odoo
+      PORT: 5432
+    volumes:
+      - odoo_data:/var/lib/odoo
+
+  odoo-db:
+    image: postgres:15
+    container_name: odoo-db
+    environment:
+      POSTGRES_DB: odoo
+      POSTGRES_USER: odoo
+      POSTGRES_PASSWORD: odoo
+    volumes:
+      - odoo_db_data:/var/lib/postgresql/data
+
+  intranet-db:
+    image: postgres:15
+    container_name: intranet-db
+    environment:
+      POSTGRES_DB: intranet
+      POSTGRES_USER: intranet
+      POSTGRES_PASSWORD: intranet
+    ports:
+      - "55432:5432"
+    volumes:
+      - intranet_db_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+  midpoint_home:
+  apacheds_data:
+  odoo_data:
+  odoo_db_data:
+  intranet_db_data:
+
